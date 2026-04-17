@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AETHER | Premium Cinema</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #0a0b10; --accent-cyan: #00f2ff; --accent-violet: #7000ff; --accent-hot: #ff0055;
+            --glass: rgba(255, 255, 255, 0.05); --glass-border: rgba(255, 255, 255, 0.12);
+            --text-main: #e0e0e0; --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-deep); color: var(--text-main); overflow: hidden; height: 100vh; width: 100%; }
+        .hidden { display: none !important; }
+
+        #loading-screen { 
+            position: fixed; inset: 0; background: radial-gradient(circle at center, #1a0520 0%, #050508 100%);
+            display: flex; align-items: center; justify-content: center; z-index: 5000; transition: opacity 1s ease; 
+        }
+        .neon-lips { width: 160px; height: 120px; fill: none; stroke-width: 2.5; animation: pulseLips 2s infinite ease-in-out; }
+        .lip-top, .lip-bottom { stroke: var(--accent-hot); filter: drop-shadow(0 0 15px var(--accent-hot)); }
+        @keyframes pulseLips { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+
+        #app-shell { display: flex; height: 100vh; width: 100vw; position: relative; opacity: 0; transition: opacity 0.5s ease; }
+        #app-shell.visible { opacity: 1; }
+        .sidebar { position: fixed; left: -280px; top: 0; bottom: 0; width: 280px; background: rgba(10, 11, 16, 0.98); backdrop-filter: blur(25px); border-right: 1px solid var(--glass-border); padding: 2rem 1.5rem; display: flex; flex-direction: column; transition: var(--transition); z-index: 1000; }
+        .sidebar.active { left: 0; }
+        .logo { font-weight: 800; font-size: 1.8rem; letter-spacing: 5px; background: linear-gradient(to right, var(--accent-cyan), var(--accent-violet)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; }
+        
+        main { flex: 1; height: 100vh; overflow-y: auto; background: #0c0d13; scroll-behavior: smooth; }
+        .top-nav { padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: rgba(12, 13, 19, 0.85); backdrop-filter: blur(15px); z-index: 500; }
+
+        .movie-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; padding: 20px; }
+        .movie-card { position: relative; aspect-ratio: 4/5; border-radius: 16px; overflow: hidden; cursor: pointer; border: 1px solid var(--glass-border); transition: var(--transition); background: #15161c; }
+        .movie-card:hover { transform: translateY(-8px); border-color: var(--accent-cyan); box-shadow: 0 10px 30px rgba(0,242,255,0.2); }
+        .movie-card img { width: 100%; height: 100%; object-fit: cover; }
+        .card-meta { position: absolute; bottom: 0; padding: 20px 15px; background: linear-gradient(transparent, rgba(0,0,0,0.95)); width: 100%; font-weight: 800; font-size: 0.9rem; }
+
+        .player-container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .video-wrapper { aspect-ratio: 16/9; background: #000; border-radius: 20px; overflow: hidden; border: 1px solid var(--glass-border); }
+
+        .btn-glow { background: linear-gradient(45deg, var(--accent-violet), var(--accent-cyan)); border: none; padding: 16px; color: white; border-radius: 14px; font-weight: 700; cursor: pointer; width: 100%; }
+        .btn-outline { background: none; border: 1px solid var(--glass-border); color: #aaa; padding: 14px; border-radius: 14px; cursor: pointer; text-align: center; display: block; width: 100%; text-decoration: none; margin-bottom: 10px; }
+        input, textarea { width: 100%; background: var(--glass); border: 1px solid var(--glass-border); padding: 16px; border-radius: 14px; color: white; margin-bottom: 12px; outline: none; }
+        .overlay { position: fixed; inset: 0; background: var(--bg-deep); display: flex; align-items: center; justify-content: center; z-index: 3000; padding: 20px; }
+        .gate-card { width: 100%; max-width: 420px; padding: 3rem; text-align: center; border-radius: 40px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.02); backdrop-filter: blur(20px); }
+
+        @media (max-width: 1100px) { .movie-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 850px) { .movie-grid { grid-template-columns: repeat(2, 1fr); } .sidebar { left: -280px; } }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <div class="loader-content">
+            <svg class="neon-lips" viewBox="0 0 100 80">
+                <path class="lip-top" d="M10,40 Q30,10 50,35 Q70,10 90,40 Q70,55 50,55 Q30,55 10,40" />
+                <path class="lip-bottom" d="M10,40 Q30,75 50,75 Q70,75 90,40 Q70,65 50,65 Q30,65 10,40" />
+            </svg>
+            <div class="logo">AETHER</div>
+        </div>
+    </div>
+
+    <div id="age-gate" class="overlay hidden">
+        <div class="gate-card">
+            <div class="logo" style="margin-bottom: 1.5rem;">AETHER</div>
+            <button onclick="window.confirmAge()" class="btn-glow">Enter Website</button>
+        </div>
+    </div>
+
+    <div id="auth-modal" class="overlay hidden">
+        <div class="gate-card">
+            <h2 id="auth-title" style="margin-bottom: 1.5rem;">Welcome Back</h2>
+            <div id="signup-fields" class="hidden"><input type="text" id="auth-name" placeholder="Full Name"></div>
+            <input type="text" id="auth-user" placeholder="Username">
+            <input type="password" id="auth-pass" placeholder="Password">
+            <button id="auth-btn" onclick="window.processAuth()" class="btn-glow">Sign In</button>
+            <p id="auth-toggle" onclick="window.toggleAuthMode()" style="margin-top:15px; cursor:pointer; font-size:0.7rem; color:var(--accent-cyan);">Don't have an account? Sign Up</p>
+            <p onclick="window.closeAuth()" style="margin-top:10px; cursor:pointer; font-size:0.7rem; color:#444;">Cancel</p>
+        </div>
+    </div>
+
+    <div id="app-shell" class="hidden">
+        <nav class="sidebar" id="sidebar">
+            <div class="logo">AETHER</div>
+            <div style="margin-top: 2rem;">
+                <button onclick="window.navigateTo('home')" class="btn-outline">Discovery</button>
+                <button onclick="window.navigateTo('favorites')" class="btn-outline">Favorites</button>
+                <button onclick="window.navigateTo('contact')" class="btn-outline">Support</button>
+            </div>
+            <div style="margin-top: auto;">
+                <p id="user-display" style="text-align:center; font-size:0.7rem; margin-bottom:10px; color:#555;"></p>
+                <button id="admin-nav" class="hidden btn-outline" onclick="window.navigateTo('admin')" style="color:gold;">Admin Panel</button>
+                <button id="login-btn" onclick="window.openAuth()" class="btn-glow">Sign In</button>
+                <button id="logout-btn" class="hidden btn-outline" onclick="window.logout()">Logout</button>
+            </div>
+        </nav>
+
+        <main id="main-scroll">
+            <header class="top-nav">
+                <div onclick="document.getElementById('sidebar').classList.toggle('active')" style="cursor:pointer; font-size:1.5rem; color:var(--accent-cyan);">☰</div>
+                <input type="text" id="search-bar" placeholder="Search for movies..." oninput="window.handleSearch(this.value)" style="width:60%; margin:0;">
+                <div style="width:20px;"></div>
+            </header>
+            <div id="content-render"></div>
+        </main>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
