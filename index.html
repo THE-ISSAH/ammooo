@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HELA WELA</title>
+    <title>AETHER | Premium Cinema</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/sYqrnYZ/62e5a60b-c773-4795-8bd9-04c4639aa469.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -20,18 +20,24 @@
             position: fixed; inset: 0; background: radial-gradient(circle at center, #1a0520 0%, #050508 100%);
             display: flex; align-items: center; justify-content: center; z-index: 5000; transition: opacity 1s ease; 
         }
-        .neon-lips { width: 160px; height: 120px; fill: none; stroke-width: 2.5; animation: pulseLips 2s infinite ease-in-out; }
-        .lip-top, .lip-bottom { stroke: var(--accent-hot); filter: drop-shadow(0 0 15px var(--accent-hot)); }
-        @keyframes pulseLips { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        .loader-content { text-align: center; }
+        .hero-img-load { width: 180px; height: auto; margin-bottom: 20px; animation: pulse 2s infinite ease-in-out; }
 
         #app-shell { display: flex; height: 100vh; width: 100vw; position: relative; opacity: 0; transition: opacity 0.5s ease; }
         #app-shell.visible { opacity: 1; }
-        .sidebar { position: fixed; left: -280px; top: 0; bottom: 0; width: 280px; background: rgba(10, 11, 16, 0.98); backdrop-filter: blur(25px); border-right: 1px solid var(--glass-border); padding: 2rem 1.5rem; display: flex; flex-direction: column; transition: var(--transition); z-index: 1000; }
+        
+        .sidebar { position: fixed; left: -280px; top: 0; bottom: 0; width: 280px; background: rgba(10, 11, 16, 0.98); backdrop-filter: blur(25px); border-right: 1px solid var(--glass-border); padding: 2rem 1.5rem; display: flex; flex-direction: column; transition: var(--transition); z-index: 2000; }
         .sidebar.active { left: 0; }
+        #sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1500; display: none; opacity: 0; transition: opacity 0.4s ease; }
+        #sidebar-overlay.active { display: block; opacity: 1; }
+
         .logo { font-weight: 800; font-size: 1.8rem; letter-spacing: 5px; background: linear-gradient(to right, var(--accent-cyan), var(--accent-violet)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; }
         
         main { flex: 1; height: 100vh; overflow-y: auto; background: #0c0d13; scroll-behavior: smooth; }
         .top-nav { padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: rgba(12, 13, 19, 0.85); backdrop-filter: blur(15px); z-index: 500; }
+
+        .home-hero { padding: 40px 20px; text-align: center; background: linear-gradient(rgba(12,13,19,0) 0%, #0c0d13 100%); position: relative; }
+        .hero-branding { width: 220px; margin: 0 auto 20px; display: block; filter: drop-shadow(0 0 20px rgba(255,0,85,0.3)); }
 
         .movie-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; padding: 20px; }
         .movie-card { position: relative; aspect-ratio: 4/5; border-radius: 16px; overflow: hidden; cursor: pointer; border: 1px solid var(--glass-border); transition: var(--transition); background: #15161c; }
@@ -48,6 +54,12 @@
         .overlay { position: fixed; inset: 0; background: var(--bg-deep); display: flex; align-items: center; justify-content: center; z-index: 3000; padding: 20px; }
         .gate-card { width: 100%; max-width: 420px; padding: 3rem; text-align: center; border-radius: 40px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.02); backdrop-filter: blur(20px); }
 
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
+        .toast { background: rgba(20, 20, 25, 0.95); backdrop-filter: blur(15px); border-left: 4px solid var(--accent-cyan); color: white; padding: 16px 24px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; align-items: center; transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid var(--glass-border); }
+        .toast.active { transform: translateX(0); }
+        .toast-error { border-left-color: var(--accent-hot); }
+
+        @keyframes pulse { 0%, 100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.05); filter: brightness(1.3); } }
         @media (max-width: 1100px) { .movie-grid { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 850px) { .movie-grid { grid-template-columns: repeat(2, 1fr); } .sidebar { left: -280px; } }
     </style>
@@ -56,16 +68,16 @@
 
     <div id="loading-screen">
         <div class="loader-content">
-            <svg class="neon-lips" viewBox="0 0 100 80">
-                <path class="lip-top" d="M10,40 Q30,10 50,35 Q70,10 90,40 Q70,55 50,55 Q30,55 10,40" />
-                <path class="lip-bottom" d="M10,40 Q30,75 50,75 Q70,75 90,40 Q70,65 50,65 Q30,65 10,40" />
-            </svg>
+            <img src="https://i.ibb.co/sYqrnYZ/62e5a60b-c773-4795-8bd9-04c4639aa469.png" class="hero-img-load" alt="AETHER">
             <div class="logo">AETHER</div>
         </div>
     </div>
 
+    <div id="toast-container"></div>
+
     <div id="age-gate" class="overlay hidden">
         <div class="gate-card">
+            <img src="https://i.ibb.co/sYqrnYZ/62e5a60b-c773-4795-8bd9-04c4639aa469.png" style="width:120px; margin-bottom:20px;">
             <div class="logo" style="margin-bottom: 1.5rem;">AETHER</div>
             <button onclick="window.confirmAge()" class="btn-glow">Enter Website</button>
         </div>
@@ -83,8 +95,11 @@
         </div>
     </div>
 
+    <div id="sidebar-overlay" onclick="window.toggleSidebar()"></div>
+
     <div id="app-shell" class="hidden">
         <nav class="sidebar" id="sidebar">
+            <img src="https://i.ibb.co/sYqrnYZ/62e5a60b-c773-4795-8bd9-04c4639aa469.png" style="width:80px; margin: 0 auto 10px;">
             <div class="logo">AETHER</div>
             <div style="margin-top: 2rem;">
                 <button onclick="window.navigateTo('home')" class="btn-outline">Discovery</button>
@@ -101,8 +116,7 @@
 
         <main id="main-scroll">
             <header class="top-nav">
-                <div onclick="document.getElementById('sidebar').classList.toggle('active')" style="cursor:pointer; font-size:1.5rem; color:var(--accent-cyan);">☰</div>
-                <input type="text" id="search-bar" placeholder="Search for movies..." oninput="window.handleSearch(this.value)" style="width:60%; margin:0;">
+                <div onclick="window.toggleSidebar()" style="cursor:pointer; font-size:1.5rem; color:var(--accent-cyan);">☰</div>
                 <div style="width:20px;"></div>
             </header>
             <div id="content-render"></div>
