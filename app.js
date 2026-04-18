@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-import { getDatabase, ref, push, onValue, set, remove, get } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+import { getDatabase, ref, push, onValue, set, remove, get, update, increment } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDakY0gWDAbWa2jnrF3NhAuvLFPdG4usgc",
@@ -106,12 +106,10 @@ window.triggerSearch = () => {
     const searchInput = document.getElementById('search-input');
     const query = searchInput.value.toLowerCase().trim();
     if (!query) return window.navigateTo('home');
-    
     const filtered = contentData.filter(item => item.title.toLowerCase().includes(query));
     const grid = document.getElementById('grid');
     if (grid) {
         grid.innerHTML = '';
-        // Add "Exit Search" header
         const searchHeader = document.createElement('div');
         searchHeader.style.cssText = "grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--glass-border); margin-bottom: 20px;";
         searchHeader.innerHTML = `
@@ -119,7 +117,6 @@ window.triggerSearch = () => {
             <button onclick="window.navigateTo('home')" class="btn-outline" style="width:auto; margin:0; padding: 8px 15px; font-size:0.8rem; border-color:var(--accent-hot); color:var(--accent-hot);">Exit Search</button>
         `;
         grid.appendChild(searchHeader);
-        
         renderGrid(filtered, grid);
         if (filtered.length === 0) {
             const noRes = document.createElement('p');
@@ -182,6 +179,10 @@ function renderDetails(container, id) {
         }, 500);
         return;
     }
+
+    // Update view count
+    update(ref(db, `movies/${id}`), { views: increment(1) });
+
     const rawEmbeds = Array.isArray(item.links) ? item.links : [item.links];
     const cleanEmbeds = rawEmbeds.map(link => {
         if (link.includes('<iframe')) {
@@ -190,8 +191,10 @@ function renderDetails(container, id) {
         }
         return link.trim();
     });
+
     const watchLinks = item.watchLink ? (Array.isArray(item.watchLink) ? item.watchLink : [item.watchLink]) : [];
     const randomItems = [...contentData].filter(m => m.id !== id).sort(() => 0.5 - Math.random()).slice(0, 4);
+
     container.innerHTML = `
         <div class="player-container">
             <p style="color:var(--accent-hot); font-size:0.75rem; margin-bottom:8px; display:flex; align-items:center; gap:5px; font-weight:600;">
@@ -201,7 +204,11 @@ function renderDetails(container, id) {
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-top:25px;">
                 <div>
                     <h1 style="font-weight:800; font-size:1.8rem;">${item.title}</h1>
-                    <p style="color:var(--accent-cyan); font-size:0.8rem; font-weight:600; margin-top:5px;">ID: ${item.fnmCode || 'FNM-0000'}</p>
+                    <div style="display:flex; gap:15px; margin-top:5px;">
+                         <p style="color:var(--accent-cyan); font-size:0.7rem; font-weight:600;">ID: ${item.fnmCode || 'FNM-0000'}</p>
+                         <p style="color:#888; font-size:0.7rem;">👁️ ${item.views || 0} Views</p>
+                         <p style="color:#888; font-size:0.7rem;">⭐ ${item.favCount || 0} Favorites</p>
+                    </div>
                 </div>
             </div>
             <p style="color:#888; margin:15px 0; line-height:1.6;">${item.desc || 'No description available.'}</p>
@@ -284,7 +291,7 @@ function renderAdminConsole(container) {
         <div style="padding:10px; border-bottom:1px solid #222; display:flex; justify-content:space-between; align-items:center;">
             <div>
                 <span style="display:block; font-size:0.9rem;">${i.title}</span>
-                <span style="font-size:0.7rem; color:var(--accent-cyan);">${i.fnmCode || 'FNM-0000'}</span>
+                <span style="font-size:0.7rem; color:var(--accent-cyan);">${i.fnmCode || 'FNM-0000'} | Stats: 👁️${i.views || 0} ⭐${i.favCount || 0}</span>
             </div>
             <span onclick="window.del('${i.id}')" style="color:red; cursor:pointer; font-size:0.8rem;">Delete</span>
         </div>`;
@@ -344,13 +351,24 @@ window.confirmAge = () => { sessionStorage.setItem('aether_verified', 'true'); l
 window.logout = () => { localStorage.removeItem('aether_session'); window.showToast("Logged out successfully"); setTimeout(()=>location.reload(), 1000); };
 window.openAuth = () => document.getElementById('auth-modal').classList.remove('hidden');
 window.closeAuth = () => document.getElementById('auth-modal').classList.add('hidden');
+
 window.toggleFav = async (id) => {
     if (!currentUser) return window.openAuth();
     const fRef = ref(db, `users/${currentUser.uid}/favorites/${id}`);
+    const mRef = ref(db, `movies/${id}`);
     const s = await get(fRef);
-    if (s.exists()) { await remove(fRef); window.showToast("Removed from Favorites"); }
-    else { await set(fRef, true); window.showToast("Added to Favorites"); }
+    if (s.exists()) { 
+        await remove(fRef); 
+        await update(mRef, { favCount: increment(-1) });
+        window.showToast("Removed from Favorites"); 
+    }
+    else { 
+        await set(fRef, true); 
+        await update(mRef, { favCount: increment(1) });
+        window.showToast("Added to Favorites"); 
+    }
 };
+
 window.saveContent = async () => {
     const t = document.getElementById('adm-t').value, i = document.getElementById('adm-i').value, 
           lText = document.getElementById('adm-links').value, x = document.getElementById('adm-x').value,
@@ -359,10 +377,11 @@ window.saveContent = async () => {
     const l = lText.split('\n').filter(link => link.trim() !== '');
     const w = wText.split('\n').filter(link => link.trim() !== '');
     const fnmCode = `FNM-${String(contentData.length + 1).padStart(4, '0')}`;
-    await push(moviesRef, { title: t, thumb: i, links: l, desc: x, watchLink: w, fnmCode: fnmCode });
+    await push(moviesRef, { title: t, thumb: i, links: l, desc: x, watchLink: w, fnmCode: fnmCode, views: 0, favCount: 0 });
     window.showToast(`Movie saved: ${fnmCode}`);
     renderView('admin');
 };
+
 window.del = (id) => confirm("Permanently delete this item?") && remove(ref(db, `movies/${id}`));
 window.sendMsg = () => {
     if (!currentUser) return window.showToast("Please Sign In first", true);
